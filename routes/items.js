@@ -10,9 +10,12 @@ router.post("/", async (req, res, next) => {
     res.status(400).send('item is required');
   } else {
     try {
-      item.userId = req.userId;
-      const saveditem = await itemDAO.create(item);
-      res.json(saveditem);
+      if (req.roles.includes('admin')) {
+        const saveditem = await itemDAO.create(item);
+        res.json(saveditem);
+      } else {
+        res.status(403).send('user is not an admin');
+      }
     } catch(e) {
       res.status(500).send(e.message);
     }
@@ -24,7 +27,7 @@ router.get("/:id", async (req, res, next) => {
   const id = req.params.id;
   let item;
   try {
-    item = await itemDAO.getById(id, req.userId);
+    item = await itemDAO.getById(id);
     if (item) {
       res.json(item);
     } else {
@@ -37,7 +40,7 @@ router.get("/:id", async (req, res, next) => {
 
 // Read - all items
 router.get("/", async (req, res, next) => {
-  const items = await itemDAO.getAllByUserId(req.userId);
+  const items = await itemDAO.getAllItems();
   if (items && items.length > 0) {
     res.json(items);
   } else {
@@ -52,8 +55,16 @@ router.put("/:id", async (req, res, next) => {
   if (!item || JSON.stringify(item) === '{}' ) {
     res.status(400).send('item is required"');
   } else {
-    const updateditem = await itemDAO.updateById(itemId, item);
-    res.json(updateditem);
+    try {
+      if (req.roles.includes('admin')) {
+        const saveditem = await itemDAO.updateById(itemId, item);
+        res.json(saveditem);
+      } else {
+        res.status(403).send('user is not an admin');
+      }
+    } catch(e) {
+      res.status(500).send(e.message);
+    }
   }
 });
 

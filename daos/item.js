@@ -4,19 +4,25 @@ const Item = require('../models/item');
 
 //create(userId, text) - should create a item for the given user
 module.exports.create = async (item) => {
-  return await Item.create({text: item.text, userId: mongoose.Types.ObjectId(item.userId)});
+  return await Item.create({title: item.title, price: item.price});
 };
 
 // getById(itemId) - should get item for itemId (_id)
-module.exports.getById= async (itemId, userId) => {
-  if (userId) {
-    return await Item.findOne({_id: itemId, userId: mongoose.Types.ObjectId(userId)}).lean();
-  } else {
-    return await Item.findOne({_id: itemId}).lean();
-  }
+module.exports.getById= async (itemId) => {
+    return await Item.findOne({_id: mongoose.Types.ObjectId(itemId)}).lean();
 };
 
-// getUserItems(userId) - should get all items for userId
-module.exports.getAllByUserId = async (userId) => {
-  return await Item.find({ userId: mongoose.Types.ObjectId(userId) }).lean();
+// getItems() - should get all items
+module.exports.getAllItems = async () => {
+  return await Item.find({}).lean();
+};
+
+module.exports.updateById = async (itemId, item) =>  {
+  return await Item.updateOne(
+    { _id: itemId },
+    {
+      $set: { title: item.title, price: item.price },
+      $currentDate: { lastModified: true }
+    }
+  )
 };

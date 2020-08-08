@@ -13,8 +13,9 @@ router.use((req, res, next) => {
       if (aToken && aToken !== "undefined") {
         try {
           const jwtToken = jwt.verify(aToken, secret)
-          req.token = aToken;
           req.userEmail = jwtToken.email;
+          req.userId = jwtToken.userId;
+          req.roles = jwtToken.roles;
           next();
         } catch (e) {
           res.status(401).send(e.message);
@@ -29,7 +30,7 @@ router.use((req, res, next) => {
 });
 
 router.use('/items',(req, res, next) => {
-  if(!req.userEmail) {
+  if(!req.userId) {
     res.status(401).send(e.message);
   } else {
     next();
@@ -37,7 +38,7 @@ router.use('/items',(req, res, next) => {
 });
 
 router.use('/orders',(req, res, next) => {
-  if(!req.userEmail) {
+  if(!req.userId) {
     res.status(401).send(e.message);
   } else {
     next();

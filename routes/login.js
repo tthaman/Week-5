@@ -58,7 +58,8 @@ router.post("/", async (req, res, next) => {
       } else if (!bcrypt.compareSync(password, savedUser.password)) {
         res.status(401).send("Passwords do not match");
       }else {
-        const tokenData = (({ _id, email, roles }) => ({ _id, email, roles }))(savedUser);
+        let tokenData = (({ _id, email, roles }) => ({ _id, email, roles }))(savedUser);
+        tokenData['userId'] = tokenData['_id'];
         const token = jwt.sign(tokenData, secret, { expiresIn: '5 minutes' })
         res.body = {token: token};
         res.json(res.body);
