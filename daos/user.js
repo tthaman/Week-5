@@ -23,8 +23,7 @@ module.exports.getById = async (userId) => {
 }
 
 module.exports.getByEmail = async (email) => {
-  const user =  await User.findOne({ email: email }).lean();
-  return user;
+  return  await User.findOne({ email: email }).lean();
 }
 
 module.exports.deleteByUserId = async (userId) => {
@@ -33,8 +32,6 @@ module.exports.deleteByUserId = async (userId) => {
 
 module.exports.create = async (userData) => {
   userData.password = bcrypt.hashSync(userData.password, salt);
-  let roles = ['user'];
-  userData.roles = roles;
-  const created = await User.create(userData);
-  return created;
+  userData.roles = ['user'];
+  return await User.create(userData);
 }

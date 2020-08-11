@@ -1,32 +1,22 @@
 const { Router } = require("express");
 const router = Router();
-
+const orderDAO = require('../daos/order');
 const itemDAO = require('../daos/item');
-
-// Create
-router.post("/", async (req, res, next) => {
-  const item = req.body;
-  if (!item || JSON.stringify(item) === '{}' ) {
-    res.status(400).send('item is required');
-  } else {
-    try {
-      item.userId = req.userId;
-      const saveditem = await itemDAO.create(item);
-      res.json(saveditem);
-    } catch(e) {
-      res.status(500).send(e.message);
-    }
-  }
-});
+const mongoose = require('mongoose');
 
 // Read - single item
 router.get("/:id", async (req, res, next) => {
   const id = req.params.id;
-  let item;
   try {
-    item = await itemDAO.getById(id, req.userId);
-    if (item) {
-      res.json(item);
+    let order = await orderDAO.getById(id);
+    if (req.roles.includes('admin') ||
+      (order && mongoose.Types.ObjectId(order.userId).toString() === req.userId)) {
+        let dbItems = [];
+        for (const item of order.items) {
+          dbItems.push(await itemDAO.getById(item));
+        }
+        order.items = dbItems;
+        res.json(order);
     } else {
       res.sendStatus(404);
     }
@@ -35,36 +25,38 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-// Read - all items
+// Read - all orders
 router.get("/", async (req, res, next) => {
-  const items = await itemDAO.getAllByUserId(req.userId);
-  if (items && items.length > 0) {
-    res.json(items);
+  let orders;
+  if (req.roles.includes('admin')) {
+    orders = await orderDAO.getAllOrders();
+  } else {
+    orders = await orderDAO.getAllByUserId(req.userId);
+  }
+  if (orders && orders.length > 0) {
+    res.json(orders);
   } else {
     res.sendStatus(404);
   }
 });
 
-// Update
-router.put("/:id", async (req, res, next) => {
-  const itemId = req.params.id;
-  const item = req.body;
-  if (!item || JSON.stringify(item) === '{}' ) {
-    res.status(400).send('item is required"');
-  } else {
-    const updateditem = await itemDAO.updateById(itemId, item);
-    res.json(updateditem);
-  }
-});
-
-// Delete
-router.delete("/:id", async (req, res, next) => {
-  const itemId = req.params.id;
+// Create
+router.post("/", async (req, res, next) => {
+  const items = req.body;
   try {
-    await itemDAO.deleteById(itemId);
-    res.sendStatus(200);
-  } catch(e) {
-    res.status(500).send(e.message);
+    if (!items || JSON.stringify(items) === '{}' ) {
+      res.status(400).send('items are required');
+    } else {
+      let order = {userId: req.userId, items: items, total: 0}
+      for (const item of items) {
+        const dbItem = await itemDAO.getById(item);
+        order.total += dbItem.price;
+      }
+      const newOrder = await orderDAO.create(order);
+      res.json(newOrder);
+    }
+  } catch (e) {
+    res.sendStatus(400);
   }
 });
 
